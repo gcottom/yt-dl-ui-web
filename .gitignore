@@ -6,3 +6,5 @@ audio-analyzer/dist/
 yt-dl-ui.app/Contents/Info.plist
 yt-dl-ui.app/Contents/MacOS/yt-dl-ui
 yt-dl-ui.app/Contents/Resources/icon.icns
+yt-dl-ui.js.map
+yt-dl-ui.map
