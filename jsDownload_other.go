@@ -3,5 +3,10 @@
 
 package main
 
+import (
+	"fmt"
+)
+
 func jsDownload(outBlob []byte, filename string) {
+	fmt.Println("other jsdownload")
 }

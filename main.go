@@ -30,8 +30,7 @@ var (
 	DLDir                string
 	viewContent          *fyne.Container
 	lastSearch           time.Time
-	searchWaiting        bool
-	searchWaitingChannel chan struct{}
+	searchWaitingChannel chan bool
 )
 
 const (
@@ -114,33 +113,28 @@ func formatSearchResults(artist string, song string, album string) string {
 	return "Artist: " + artist + "\n\nTrack: " + song + "\n\nAlbum: " + album
 }
 func delayedMetaWithArtistSearch(s string) {
-searchWaitingLoop:
 	for {
 		select {
-		case <-searchWaitingChannel:
-			break searchWaitingLoop
-		default:
-			if time.Now().After(lastSearch.Add(3 * time.Second)) {
-				searchWaiting = false
-				go searchMetaWithArtist(s)
-				searchWaitingChannel <- struct{}{}
-			} else {
-				time.Sleep(500 * time.Millisecond)
+		case v := <-searchWaitingChannel:
+			if v {
+				close(searchWaitingChannel)
 			}
-
+			if time.Now().After(lastSearch.Add(3 * time.Second)) {
+				go searchMetaWithArtist(s)
+			} 
 		}
 	}
 }
 func init() {
-	searchWaitingChannel = make(chan struct{})
+	go delayedMetaWithArtistSearch("")
+	searchWaitingChannel = make(chan bool)
 	searchMetaWithArtist = func(s string) {
 		if time.Now().Before(lastSearch.Add(3 * time.Second)) {
-			if searchWaiting {
-				return
+			select{
+			case searchWaitingChannel <- false: return
+			default: return
 			}
-			searchWaiting = true
-			go delayedMetaWithArtistSearch(s)
-			return
+			
 		}
 		lastSearch = time.Now()
 		err := getMetaFromSongAndArtist(tsb.Text, msb.Text)
@@ -153,7 +147,6 @@ func init() {
 				meta := result
 				var img fyne.Resource = nil
 				button := NewCustomButton(formatSearchResults(meta.artist, meta.song, meta.album), img, func() {
-					searchWaitingChannel <- struct{}{}
 					tdata, fname, err := saveMeta(meta, OutFile)
 					if err != nil {
 						handleError(err)
@@ -175,7 +168,6 @@ func init() {
 				if strings.Contains(strings.ToLower(result.artist), strings.ToLower(s)) {
 					meta := result
 					button := NewCustomButton(formatSearchResults(meta.artist, meta.song, meta.album), theme.ErrorIcon(), func() {
-						searchWaitingChannel <- struct{}{}
 						tdata, fname, err := saveMeta(meta, OutFile)
 						if err != nil {
 							handleError(err)
@@ -217,6 +209,7 @@ func init() {
 		w.SetContent(container.NewVScroll(viewContent))
 	}
 	searchMeta = func() {
+		searchWaitingChannel = make(chan bool)
 		lastSearch = time.Now().Add(2 * time.Second)
 		getMetaFromSong(title)
 		var elements []*fyne.Container
