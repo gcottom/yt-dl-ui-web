@@ -1,0 +1,8 @@
+yt-dl-ui.exe
+ffmpeg-win/ffmpeg.exe
+ffmpeg-mac/ffmpeg
+audio-analyzer/build/
+audio-analyzer/dist/
+yt-dl-ui.app/Contents/Info.plist
+yt-dl-ui.app/Contents/MacOS/yt-dl-ui
+yt-dl-ui.app/Contents/Resources/icon.icns
