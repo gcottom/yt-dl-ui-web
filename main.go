@@ -29,8 +29,8 @@ var (
 	OutFile              string
 	DLDir                string
 	viewContent          *fyne.Container
-	lastSearch 			 time.Time
-	searchWaiting		bool
+	lastSearch           time.Time
+	searchWaiting        bool
 	searchWaitingChannel chan struct{}
 )
 
@@ -113,28 +113,28 @@ func formatSearchResults(artist string, song string, album string) string {
 	}
 	return "Artist: " + artist + "\n\nTrack: " + song + "\n\nAlbum: " + album
 }
-func delayedMetaWithArtistSearch(s string){
-	searchWaitingLoop:
+func delayedMetaWithArtistSearch(s string) {
+searchWaitingLoop:
 	for {
 		select {
-		case <- searchWaitingChannel:
+		case <-searchWaitingChannel:
 			break searchWaitingLoop
 		default:
-			if time.Now().After(lastSearch.Add(3*time.Second)){
+			if time.Now().After(lastSearch.Add(3 * time.Second)) {
 				searchWaiting = false
 				go searchMetaWithArtist(s)
 				searchWaitingChannel <- struct{}{}
-			}else{
-				time.Sleep(500*time.Millisecond)
+			} else {
+				time.Sleep(500 * time.Millisecond)
 			}
-		
-	}
+
+		}
 	}
 }
 func init() {
 	searchWaitingChannel = make(chan struct{})
 	searchMetaWithArtist = func(s string) {
-		if time.Now().Before(lastSearch.Add(3*time.Second)){
+		if time.Now().Before(lastSearch.Add(3 * time.Second)) {
 			if searchWaiting {
 				return
 			}
@@ -217,7 +217,7 @@ func init() {
 		w.SetContent(container.NewVScroll(viewContent))
 	}
 	searchMeta = func() {
-		lastSearch = time.Now().Add(2*time.Second)
+		lastSearch = time.Now().Add(2 * time.Second)
 		getMetaFromSong(title)
 		var elements []*fyne.Container
 		for _, result := range resultMeta {
@@ -318,7 +318,6 @@ func showMainScreen() {
 	viewContent = vBox
 	w.SetContent(container.NewVScroll(viewContent))
 }
-
 
 func handleError(err error) {
 	s := dialogTextFormat(fmt.Sprintf("WELL FUCK!\n%v", err))

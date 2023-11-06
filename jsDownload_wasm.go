@@ -8,6 +8,7 @@ import (
 
 	"syscall/js"
 )
+
 func jsDownload(outBlob []byte, filename string) {
 	downloadFile := js.FuncOf(func(this js.Value, p []js.Value) interface{} {
 		data := outBlob

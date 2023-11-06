@@ -8,6 +8,7 @@ import (
 
 	"github.com/gopherjs/gopherjs/js"
 )
+
 func jsDownload(outBlob []byte, filename string) {
 	downloadFile := js.MakeFunc(func(this *js.Object, p []*js.Object) interface{} {
 		data := outBlob // Replace with your file content
