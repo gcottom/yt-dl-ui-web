@@ -114,14 +114,12 @@ func formatSearchResults(artist string, song string, album string) string {
 }
 func delayedMetaWithArtistSearch(s string) {
 	for {
-		select {
-		case v := <-searchWaitingChannel:
-			if v {
-				close(searchWaitingChannel)
-			}
-			if time.Now().After(lastSearch.Add(3 * time.Second)) {
-				go searchMetaWithArtist(s)
-			} 
+		v := <-searchWaitingChannel
+		if v {
+			close(searchWaitingChannel)
+		}
+		if time.Now().After(lastSearch.Add(3 * time.Second)) {
+			go searchMetaWithArtist(s)
 		}
 	}
 }
@@ -130,11 +128,13 @@ func init() {
 	searchWaitingChannel = make(chan bool)
 	searchMetaWithArtist = func(s string) {
 		if time.Now().Before(lastSearch.Add(3 * time.Second)) {
-			select{
-			case searchWaitingChannel <- false: return
-			default: return
+			select {
+			case searchWaitingChannel <- false:
+				return
+			default:
+				return
 			}
-			
+
 		}
 		lastSearch = time.Now()
 		err := getMetaFromSongAndArtist(tsb.Text, msb.Text)
@@ -147,6 +147,10 @@ func init() {
 				meta := result
 				var img fyne.Resource = nil
 				button := NewCustomButton(formatSearchResults(meta.artist, meta.song, meta.album), img, func() {
+					pb := widget.NewProgressBarInfinite()
+					tbSpacer := layout.NewSpacer()
+					tbSpacer.Resize(fyne.NewSize(0, 200))
+					w.SetContent(container.NewCenter(pb))
 					tdata, fname, err := saveMeta(meta, OutFile)
 					if err != nil {
 						handleError(err)
@@ -168,6 +172,10 @@ func init() {
 				if strings.Contains(strings.ToLower(result.artist), strings.ToLower(s)) {
 					meta := result
 					button := NewCustomButton(formatSearchResults(meta.artist, meta.song, meta.album), theme.ErrorIcon(), func() {
+						pb := widget.NewProgressBarInfinite()
+						tbSpacer := layout.NewSpacer()
+						tbSpacer.Resize(fyne.NewSize(0, 200))
+						w.SetContent(container.NewCenter(pb))
 						tdata, fname, err := saveMeta(meta, OutFile)
 						if err != nil {
 							handleError(err)
@@ -186,6 +194,10 @@ func init() {
 		searchTitleBar := tsb
 		searchBar := msb
 		done := widget.NewButton("Done", func() {
+			pb := widget.NewProgressBarInfinite()
+			tbSpacer := layout.NewSpacer()
+			tbSpacer.Resize(fyne.NewSize(0, 200))
+			w.SetContent(container.NewCenter(pb))
 			tdata, fname, err := saveMeta(Meta{song: title}, OutFile)
 			if err != nil {
 				handleError(err)
@@ -217,6 +229,10 @@ func init() {
 			meta := result
 			var img fyne.Resource = nil
 			button := NewCustomButton(formatSearchResults(meta.artist, meta.song, meta.album), img, func() {
+				pb := widget.NewProgressBarInfinite()
+				tbSpacer := layout.NewSpacer()
+				tbSpacer.Resize(fyne.NewSize(0, 200))
+				w.SetContent(container.NewCenter(pb))
 				tdata, fname, err := saveMeta(meta, OutFile)
 				if err != nil {
 					handleError(err)
@@ -294,13 +310,7 @@ func showMainScreen() {
 				return
 			}
 			tsb.Text = title
-			OutFile, err = convertTrack(tempFile, title)
-			if err != nil {
-				fmt.Print("Conversion Error")
-				handleError(err)
-				showMainScreen()
-				return
-			}
+			OutFile = tempFile
 			searchMeta()
 
 		}
