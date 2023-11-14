@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 type getTrackResponse struct {
@@ -32,14 +34,37 @@ type trackConvertedResponse struct {
 	Error          string `json:"error,omitempty"`
 }
 
+func generateToken() (string, error) {
+	var secretKey = []byte("A Dirty Dummy Secret")
+	token := jwt.New(jwt.SigningMethodHS512)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["exp"] = jwt.NewNumericDate(time.Now().Add(10 * time.Minute))
+	claims["authorized"] = true
+	claims["user"] = "yt-dl-ui"
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
+
 func getTrack(id string) (string, string, error) {
 	id = strings.Replace(id, "&feature=share", "", 1)
 	id = strings.Replace(id, "https://music.youtube.com/watch?v=", "", 1)
 	id = strings.Replace(id, "https://www.music.youtube.com/watch?v=", "", 1)
 	id = strings.Replace(id, "https://www.youtube.com/watch?v", "", 1)
 	id = strings.Replace(id, "https://youtube.com/watch?v", "", 1)
-
-	res, err := http.Get("https://api.gagecottom.com/gettrack/" + id)
+	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/gettrack/"+id, nil)
+	if err != nil {
+		return "", "", err
+	}
+	token, err := generateToken()
+	if err != nil {
+		return "", "", err
+	}
+	client := &http.Client{}
+	req.Header.Add("Authorization", "Bearer "+token)
+	res, err := client.Do(req)
 	if err != nil {
 		return "", "", err
 	}
@@ -61,7 +86,19 @@ func getTrack(id string) (string, string, error) {
 		if time.Now().After(start.Add(2 * time.Minute)) {
 			return "", "", errors.New("conversion timed out")
 		}
-		res, _ := http.Get("https://api.gagecottom.com/gettrackconverted/" + s3id)
+		req, err = http.NewRequest(http.MethodGet, "https://api.gagecottom.com/gettrackconverted/"+s3id, nil)
+		if err != nil {
+			return "", "", err
+		}
+		token, err := generateToken()
+		if err != nil {
+			return "", "", err
+		}
+		req.Header.Add("Authorization", "Bearer "+token)
+		res, err := client.Do(req)
+		if err != nil {
+			return "", "", err
+		}
 		rbody, err := io.ReadAll(res.Body)
 		if err != nil {
 			return "", "", err
@@ -90,6 +127,11 @@ func saveMeta(m Meta, url string) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+	token, err := generateToken()
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, "", err

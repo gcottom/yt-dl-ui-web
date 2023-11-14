@@ -3,13 +3,14 @@ module github.com/gcottom/yt-dl-ui
 go 1.21
 
 replace (
-	github.com/fyne-io/glfw-js => ../glfw-js
 	fyne.io/fyne/v2 => ../fyne-fork
+	github.com/fyne-io/glfw-js => ../glfw-js
 )
 
 require (
 	fyne.io/fyne/v2 v2.4.1
 	github.com/gcottom/musicbrainz v0.1.0
+	github.com/golang-jwt/jwt/v5 v5.1.0
 	github.com/gopherjs/gopherjs v1.17.2
 	github.com/zmb3/spotify/v2 v2.3.1
 	golang.org/x/oauth2 v0.10.0
