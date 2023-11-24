@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 type getTrackResponse struct {
 	TrackUrl string `json:"trackdata,omitempty"`
 	Title    string `json:"filename,omitempty"`
+	Author   string `json:"author,omitempty"`
 	Error    string `json:"err,omitempty"`
 }
 type setTrackMetaRequest struct {
@@ -33,22 +36,40 @@ type trackConvertedResponse struct {
 	TrackData      string `json:"trackdata,omitempty"`
 	Error          string `json:"error,omitempty"`
 }
+type getMetaResponse struct {
+	Results []metaResult `json:"results,omitempty"`
+	Error   string       `json:"error,omitempty"`
+}
+type metaResult struct {
+	Title    string `json:"title,omitempty"`
+	Artist   string `json:"artist,omitempty"`
+	Album    string `json:"album,omitempty"`
+	AlbumArt string `json:"albumart,omitempty"`
+}
+
+var oldToken string
 
 func generateToken() (string, error) {
 	var secretKey = []byte("A Dirty Dummy Secret")
 	token := jwt.New(jwt.SigningMethodHS512)
 	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = jwt.NewNumericDate(time.Now().Add(10 * time.Minute))
+	claims["exp"] = jwt.NewNumericDate(time.Now().Add(5 * time.Minute))
 	claims["authorized"] = true
 	claims["user"] = "yt-dl-ui"
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		return "", err
 	}
+	fmt.Println(tokenString)
+	if tokenString == oldToken {
+		fmt.Println("Warning: attempted to reuse old token, attempting re-issue!")
+		return generateToken()
+	}
+	oldToken = tokenString
 	return tokenString, nil
 }
 
-func getTrack(id string) (string, string, error) {
+func getTrack(id string) (string, string, string, error) {
 	id = strings.Replace(id, "&feature=share", "", 1)
 	id = strings.Replace(id, "https://music.youtube.com/watch?v=", "", 1)
 	id = strings.Replace(id, "https://www.music.youtube.com/watch?v=", "", 1)
@@ -56,56 +77,56 @@ func getTrack(id string) (string, string, error) {
 	id = strings.Replace(id, "https://youtube.com/watch?v", "", 1)
 	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/gettrack/"+id, nil)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	token, err := generateToken()
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	client := &http.Client{}
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	defer res.Body.Close()
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	var gtr getTrackResponse
 	if err = json.Unmarshal(resBody, &gtr); err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	if gtr.Error != "" {
-		return "", "", errors.New(gtr.Error)
+		return "", "", "", errors.New(gtr.Error)
 	}
 	s3id := strings.ReplaceAll(gtr.TrackUrl, "https://yt-dl-ui-downloads.s3.us-east-2.amazonaws.com/", "")
 	start := time.Now()
 	for {
 		if time.Now().After(start.Add(2 * time.Minute)) {
-			return "", "", errors.New("conversion timed out")
+			return "", "", "", errors.New("conversion timed out")
 		}
 		req, err = http.NewRequest(http.MethodGet, "https://api.gagecottom.com/gettrackconverted/"+s3id, nil)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		token, err := generateToken()
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		req.Header.Add("Authorization", "Bearer "+token)
 		res, err := client.Do(req)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		rbody, err := io.ReadAll(res.Body)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		var tres trackConvertedResponse
 		if err = json.Unmarshal(rbody, &tres); err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		if tres.TrackConverted {
 			break
@@ -113,7 +134,7 @@ func getTrack(id string) (string, string, error) {
 		time.Sleep(5 * time.Second)
 
 	}
-	return gtr.TrackUrl, gtr.Title, nil
+	return gtr.TrackUrl, gtr.Title, gtr.Author, nil
 }
 
 func saveMeta(m Meta, url string) ([]byte, string, error) {
@@ -158,4 +179,43 @@ func saveMeta(m Meta, url string) ([]byte, string, error) {
 		return nil, "", err
 	}
 	return data, stmr.FileName, nil
+}
+
+func getMetaInit(m map[string][]string) ([]metaResult, error) {
+	outResult := []metaResult{}
+	for key, value := range m {
+		for _, v1 := range value {
+
+			req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/getmetainit/"+url.PathEscape(key)+"/"+url.PathEscape(v1), nil)
+			if err != nil {
+				return nil, err
+			}
+			token, err := generateToken()
+			if err != nil {
+				return nil, err
+			}
+			client := &http.Client{}
+			req.Header.Add("Authorization", "Bearer "+token)
+			res, err := client.Do(req)
+			if err != nil {
+				return nil, err
+			}
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Println(string(resBody))
+			var gmr getMetaResponse
+			if err = json.Unmarshal(resBody, &gmr); err != nil {
+				return nil, err
+			}
+			if gmr.Error != "" {
+				return nil, err
+			}
+			outResult = append(outResult, gmr.Results...)
+		}
+	}
+	return outResult, nil
+
 }

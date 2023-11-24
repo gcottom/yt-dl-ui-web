@@ -302,16 +302,58 @@ func showMainScreen() {
 			w.SetContent(container.NewCenter(pb))
 			var err error
 			var tempFile string
-			tempFile, title, err = getTrack(urlBox.Text)
+			var author string
+			tempFile, title, author, err = getTrack(urlBox.Text)
 			if err != nil {
 				fmt.Print("Download Error")
 				handleError(err)
 				showMainScreen()
 				return
 			}
-			tsb.Text = title
-			OutFile = tempFile
-			searchMeta()
+			m := getArtistTitleCombos(title, author)
+			results, err := getMetaInit(m)
+			if err != nil {
+				fmt.Print("Metadata Search Error")
+				handleError(err)
+				showMainScreen()
+				return
+			}
+			absolute_match := Meta{}
+			absolute_match_found := false
+		r_loop:
+			for _, r := range results {
+				for k, v := range m {
+					if strings.EqualFold(k, r.Artist) {
+						for _, v1 := range v {
+							if strings.EqualFold(v1, r.Title) {
+								absolute_match_found = true
+								absolute_match.artist = r.Artist
+								absolute_match.album = r.Album
+								absolute_match.albumImage = r.AlbumArt
+								absolute_match.song = r.Title
+								fmt.Println("Absolute Match Found")
+								break r_loop
+							}
+						}
+					}
+				}
+			}
+			if absolute_match_found {
+				pb := widget.NewProgressBarInfinite()
+				tbSpacer := layout.NewSpacer()
+				tbSpacer.Resize(fyne.NewSize(0, 200))
+				w.SetContent(container.NewCenter(pb))
+				tdata, fname, err := saveMeta(Meta{song: absolute_match.song, albumImage: absolute_match.albumImage, album: absolute_match.album, artist: absolute_match.artist}, tempFile)
+				if err != nil {
+					handleError(err)
+					showMainScreen()
+				}
+				jsDownload(tdata, fname)
+			} else {
+				tsb.Text = title
+				OutFile = tempFile
+				searchMeta()
+			}
 
 		}
 	})
