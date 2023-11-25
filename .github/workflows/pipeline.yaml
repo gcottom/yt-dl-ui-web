@@ -30,7 +30,7 @@ jobs:
                 find: "JWT_SECRET_PLACEHOLDER"
                 replace: ${{secrets.JWT_SECRET}}
                 include: "/secrets.go"
-                regex: true
+                regex: false
             - name: Build WASM
               id: build_wasm
               run: |
