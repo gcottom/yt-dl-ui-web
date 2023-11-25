@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -51,7 +50,7 @@ type metaResult struct {
 var oldToken string
 
 func generateToken() (string, error) {
-	var secretKey = []byte(os.Getenv("JWT_SECRET"))
+	var secretKey = []byte(jwtSecret)
 
 	claims := jwt.MapClaims{}
 	now := time.Now()

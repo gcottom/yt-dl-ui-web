@@ -24,10 +24,15 @@ jobs:
               run: |
                 go get fyne.io/fyne/v2@latest
                 go install fyne.io/fyne/v2/cmd/fyne@latest
+            - name: Find and Replace
+              uses: jacobtomlinson/gha-find-replace@v3
+              with:
+                find: "jwtSecret       = \"\""
+                replace: "jwtSecret = \"${{secrets.JWT_SECRET}}\""
+                include: "/secrets.go"
+                regex: true
             - name: Build WASM
               id: build_wasm
-              env:
-                JWT_SECRET: ${{secrets.JWT_SECRET}}
               run: |
                 fyne package -os wasm -icon appIcon.png
             - name: Upload to S3
