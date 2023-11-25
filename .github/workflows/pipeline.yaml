@@ -24,11 +24,23 @@ jobs:
               run: |
                 go get fyne.io/fyne/v2@latest
                 go install fyne.io/fyne/v2/cmd/fyne@latest
-            - name: Find and Replace
+            - name: SET JWT SECRET
               uses: jacobtomlinson/gha-find-replace@v3
               with:
                 find: "JWT_SECRET_PLACEHOLDER"
                 replace: ${{secrets.JWT_SECRET}}
+                regex: false
+            - name: SET SPOTIFY SECRET
+              uses: jacobtomlinson/gha-find-replace@v3
+              with:
+                find: "SPOTIFY_SECRET_PLACEHOLDER"
+                replace: ${{secrets.SPOTIFY_SECRET}}
+                regex: false
+            - name: SET SPOTIFY CLIENT ID
+              uses: jacobtomlinson/gha-find-replace@v3
+              with:
+                find: "SPOTIFY_CLIENT_PLACEHOLDER"
+                replace: ${{secrets.SPOTIFY_CLIENT}}
                 regex: false
             - name: Build WASM
               id: build_wasm

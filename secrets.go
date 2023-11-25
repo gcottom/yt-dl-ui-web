@@ -1,7 +1,7 @@
 package main
 
 var (
-	spotifyClientID = ""
-	spotifySecret   = ""
+	spotifyClientID = "SPOTIFY_CLIENT_PLACEHOLDER"
+	spotifySecret   = "SPOTIFY_SECRET_PLACEHOLDER"
 	jwtSecret       = "JWT_SECRET_PLACEHOLDER"
 )
