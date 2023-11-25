@@ -9,6 +9,6 @@ import (
 
 func showKeyboard() {
 	js.Global().Get("document").Get("activeElement").Set("contentEditable", true)
-	js.Global().Get("navigator").Get("virtualKeyboard").Set("overlaysContent", true)
-	js.Global().Get("navigator").Get("virtualKeyboard").Call("show")
+	//js.Global().Get("navigator").Get("virtualKeyboard").Set("overlaysContent", true)
+	//js.Global().Get("navigator").Get("virtualKeyboard").Call("show")
 }
