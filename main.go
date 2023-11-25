@@ -287,13 +287,28 @@ func main() {
 
 }
 
+type customWidget struct {
+	widget.Entry
+}
+
+func newCustomWidget() *customWidget {
+	wid := &customWidget{}
+	wid.ExtendBaseWidget(wid)
+	return wid
+}
+func (w *customWidget) Tapped(ev *fyne.PointEvent) {
+	w.FocusGained()
+	showKeyboard()
+}
+
 func showMainScreen() {
 	tsb = widget.NewEntry()
 	msb = widget.NewEntry()
 	msb.OnChanged = searchMetaWithArtist
 	tsb.OnChanged = searchMetaWithArtist
 	titleLabel := widget.NewLabel("Youtube URL:")
-	urlBox := widget.NewEntry()
+	urlBox := newCustomWidget()
+
 	downloadButton := widget.NewButton("DOWNLOAD", func() {
 		if strings.TrimSpace(urlBox.Text) != "" {
 			pb := widget.NewProgressBarInfinite()
