@@ -3,65 +3,16 @@ package main
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 )
 
 func getArtistTitleCombos(filename, author string) map[string][]string {
-	t, c := pSanitize(getBestPatternMatch(identifyPattern(filename)), filename)
+	filename = strings.ReplaceAll(filename, ":", "-")
+	t, c := pSanitize(filename)
 	return artistTitleSplit(t, c, author)
 }
-func identifyPattern(s string) []string {
-	out := make([]string, 0)
-	regs := make(map[string]*regexp.Regexp)
-	regs["artist-h-title-gen"] = regexp.MustCompile(`^([\w\s]+)-([\w\s]+)$`)
-	regs["artist-h-title-specials-no-hp"] = regexp.MustCompile(`^([\w\s.,_&]+)-([\w\s.,_&]+)$`)
-	regs["artist-h-title-specials-no-h-wp-l"] = regexp.MustCompile(`^([\w\s.,_&\(\)]+)-([\w\s.,_&]+)$`)
-	regs["artist-h-title-specials-no-h-wp-r"] = regexp.MustCompile(`^([\w\s.,_&]+)-([\w\s.,_&\(\)]+)$`)
-	regs["artist-h-title-specials-no-h-wp-b"] = regexp.MustCompile(`^([\w\s.,_&\(\)]+)-([\w\s.,_&\(\)]+)$`)
-	regs["artist-semi-title-gen"] = regexp.MustCompile(`^([\w\s]+):([\w\s]+)$`)
-	regs["artist-semi-title-specials-no-hp"] = regexp.MustCompile(`^([\w\s.,_&]+):([\w\s.,_&]+)$`)
-	regs["artist-semi-title-specials-no-h-wp-l"] = regexp.MustCompile(`^([\w\s.,_&\(\)]+):([\w\s.,_&]+)$`)
-	regs["artist-semi-title-specials-no-h-wp-r"] = regexp.MustCompile(`^([\w\s.,_&]+):([\w\s.,_&\(\)]+)$`)
-	regs["artist-semi-title-specials-no-h-wp-b"] = regexp.MustCompile(`^([\w\s.,_&\(\)]+):([\w\s.,_&\(\)]+)$`)
-	for k, v := range regs {
-		if v.MatchString(s) {
-			out = append(out, k)
-		}
-	}
-	return out
-}
-func getBestPatternMatch(s []string) string {
-	if len(s) < 1 {
-		//no patterns matched
-		return ""
-	}
-	sort.Strings(s)
-	if len(s) > 1 {
-		//contains more than 1 pattern match
-		//take the most specific pattern match
-		for _, r := range s {
-			if regexp.MustCompile(`^.+gen$`).MatchString(r) {
-				return r
-			}
-			if regexp.MustCompile(`^.+hp`).MatchString(r) {
-				return r
-			}
-		}
-		//is no-h-wp type
-		//the length will be 2, h-wp-b will be at index 0
-		//index 1 will have the more specific type
-		return s[1]
-	}
-	//there is only 1 match so return it
-	return s[0]
-}
-func pSanitize(pattern, s string) (sanitizedTrack, coverArtist string) {
-	fmt.Println("Most specific match pattern:", pattern)
-	rppat := regexp.MustCompile(`^([\w-]+)wp-([rb])$`)
-	if !rppat.MatchString(pattern) {
-		return s, ""
-	}
+
+func pSanitize(s string) (sanitizedTrack, coverArtist string) {
 	inparReg := regexp.MustCompile(`\([^)]*\)`)
 	inpar := inparReg.FindAllStringSubmatch(s, -1)
 	san := inparReg.ReplaceAllString(s, "")
@@ -73,7 +24,7 @@ func pSanitize(pattern, s string) (sanitizedTrack, coverArtist string) {
 			match[0] = string([]byte(match[0])[0 : len(match[0])-1])
 			fmt.Println("filename contains \"cover by\" or \"by\"")
 			t := strings.Split(match[0], "by")
-			return strings.ReplaceAll(san, ":", "-"), t[1]
+			return san, t[1]
 
 		}
 		if strings.Contains(strings.ToLower(match[0]), "cover") {
@@ -81,11 +32,10 @@ func pSanitize(pattern, s string) (sanitizedTrack, coverArtist string) {
 			fmt.Println("filename contains \"cover\"")
 			fmt.Println("P String:", match[0])
 			if strings.HasSuffix(strings.ToLower(match[0]), "cover") {
-				return strings.ReplaceAll(san, ":", "-"), match[0]
+				return san, match[0]
 
 			}
 		}
-
 	}
 	return san, ""
 }
@@ -97,15 +47,35 @@ func artistTitleSplit(s, c, a string) map[string][]string {
 
 	if strings.Contains(s, "-") {
 		sp := strings.Split(s, "-")
-		for i, p := range sp {
-			sp[i] = strings.Trim(p, " ")
+		//cover artist overrides original artist
+		if c != "" && len(sp) == 2 {
+			m[strings.Trim(sanitizeAuthor(c), " ")] = []string{strings.Trim(sp[0], " "), strings.Trim(sp[1], " ")}
 		}
-		if c == "" {
-			m[sp[0]] = []string{sp[1]}
-			m[sp[1]] = []string{sp[0]}
-		} else {
-			m[sanitizeAuthor(c)] = []string{sp[0], sp[1]}
+		//artist - title case
+		if c == "" && len(sp) == 2 {
+			m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[1], " "))] = []string{strings.Trim(sp[0], " ")}
+			return m
 		}
+		//artist - title-title case or
+		//artist-artist - title case
+		if c == "" && len(sp) == 3 {
+			m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1]+"-"+sp[2], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[0]+"-"+sp[1], " "))] = []string{strings.Trim(sp[2], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[1]+"-"+sp[2], " "))] = []string{strings.Trim(sp[0], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[2], " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
+		}
+		//artist - title-title-title
+		//artist-artist - title-title
+		//artits-artits-artist - title
+		if c == "" && len(sp) == 4 {
+			m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1]+"-"+sp[2]+"-"+sp[3], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[0]+"-"+sp[1], " "))] = []string{strings.Trim(sp[2]+"-"+sp[3], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[2]+"-"+sp[3], " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[0]+"-"+sp[1]+"-"+sp[2], " "))] = []string{strings.Trim(sp[3], " ")}
+			m[sanitizeAuthor(strings.Trim(sp[1]+"-"+sp[2]+"-"+sp[3], " "))] = []string{strings.Trim(sp[0], " ")}
+		}
+
 		return m
 	}
 	m[sanitizeAuthor(a)] = []string{s}

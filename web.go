@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type getTrackResponse struct {
@@ -51,18 +51,25 @@ var oldToken string
 
 func generateToken() (string, error) {
 	var secretKey = []byte("A Dirty Dummy Secret")
-	token := jwt.New(jwt.SigningMethodHS512)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = jwt.NewNumericDate(time.Now().Add(5 * time.Minute))
+
+	claims := jwt.MapClaims{}
+	now := time.Now()
+	claims["exp"] = jwt.NewNumericDate(now.Add(300 * time.Second))
+	claims["iat"] = jwt.NewNumericDate(now)
+	claims["nbf"] = jwt.NewNumericDate(now)
 	claims["authorized"] = true
 	claims["user"] = "yt-dl-ui"
+	nonce, err := uuid.NewRandom()
+	if err != nil {
+		return "", err
+	}
+	claims["nonce"] = nonce.String()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(tokenString)
 	if tokenString == oldToken {
-		fmt.Println("Warning: attempted to reuse old token, attempting re-issue!")
 		return generateToken()
 	}
 	oldToken = tokenString
@@ -205,7 +212,6 @@ func getMetaInit(m map[string][]string) ([]metaResult, error) {
 			if err != nil {
 				return nil, err
 			}
-			fmt.Println(string(resBody))
 			var gmr getMetaResponse
 			if err = json.Unmarshal(resBody, &gmr); err != nil {
 				return nil, err
