@@ -2,10 +2,7 @@ module github.com/gcottom/yt-dl-ui
 
 go 1.21
 
-replace (
-	fyne.io/fyne/v2 => ../fyne-fork
-	github.com/fyne-io/glfw-js => ../glfw-js
-)
+replace fyne.io/fyne/v2 => ./fyne-fork
 
 require (
 	fyne.io/fyne/v2 v2.4.1
@@ -23,7 +20,7 @@ require (
 	github.com/fredbi/uri v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
-	github.com/fyne-io/glfw-js v0.0.0-20220517201726-bebc2019cd33 // indirect
+	github.com/fyne-io/glfw-js v0.0.0-20231117203605-bc7c6f97d52f // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
