@@ -3,5 +3,5 @@ package main
 var (
 	spotifyClientID = ""
 	spotifySecret   = ""
-	jwtSecret       = ""
+	jwtSecret       = "JWT_SECRET_PLACEHOLDER"
 )

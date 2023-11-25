@@ -27,8 +27,8 @@ jobs:
             - name: Find and Replace
               uses: jacobtomlinson/gha-find-replace@v3
               with:
-                find: "jwtSecret       = \"\""
-                replace: "jwtSecret = \"${{secrets.JWT_SECRET}}\""
+                find: "JWT_SECRET_PLACEHOLDER"
+                replace: ${{secrets.JWT_SECRET}}
                 include: "/secrets.go"
                 regex: true
             - name: Build WASM
