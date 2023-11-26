@@ -82,7 +82,7 @@ func getTrack(id string) (string, string, string, error) {
 	id = strings.Replace(id, "https://www.music.youtube.com/watch?v=", "", 1)
 	id = strings.Replace(id, "https://www.youtube.com/watch?v", "", 1)
 	id = strings.Replace(id, "https://youtube.com/watch?v", "", 1)
-	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/gettrack/"+id, nil)
+	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/tracks/"+id, nil)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -114,7 +114,7 @@ func getTrack(id string) (string, string, string, error) {
 		if time.Now().After(start.Add(2 * time.Minute)) {
 			return "", "", "", errors.New("conversion timed out")
 		}
-		req, err = http.NewRequest(http.MethodGet, "https://api.gagecottom.com/gettrackconverted/"+s3id, nil)
+		req, err = http.NewRequest(http.MethodGet, "https://api.gagecottom.com/converted/"+s3id, nil)
 		if err != nil {
 			return "", "", "", err
 		}
@@ -151,7 +151,7 @@ func saveMeta(m Meta, url string) ([]byte, string, error) {
 	}
 	jsonBody := bytes.NewReader(reqBody)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPut, "https://api.gagecottom.com/setmeta", jsonBody)
+	req, err := http.NewRequest(http.MethodPut, "https://api.gagecottom.com/meta", jsonBody)
 	if err != nil {
 		return nil, "", err
 	}
@@ -193,7 +193,7 @@ func getMetaInit(m map[string][]string) ([]metaResult, error) {
 	for key, value := range m {
 		for _, v1 := range value {
 
-			req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/getmetainit/"+url.PathEscape(key)+"/"+url.PathEscape(v1), nil)
+			req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/meta/"+url.PathEscape(key)+"/"+url.PathEscape(v1), nil)
 			if err != nil {
 				return nil, err
 			}
