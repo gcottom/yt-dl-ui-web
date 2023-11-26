@@ -55,6 +55,7 @@ func artistTitleSplit(s, c, a string) map[string][]string {
 		if c == "" && len(sp) == 2 {
 			m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1], " ")}
 			m[sanitizeAuthor(strings.Trim(sp[1], " "))] = []string{strings.Trim(sp[0], " ")}
+			m[sanitizeAuthor(strings.Trim(a, " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
 			return m
 		}
 		//artist - title-title case or
@@ -64,6 +65,7 @@ func artistTitleSplit(s, c, a string) map[string][]string {
 			m[sanitizeAuthor(strings.Trim(sp[0]+"-"+sp[1], " "))] = []string{strings.Trim(sp[2], " ")}
 			m[sanitizeAuthor(strings.Trim(sp[1]+"-"+sp[2], " "))] = []string{strings.Trim(sp[0], " ")}
 			m[sanitizeAuthor(strings.Trim(sp[2], " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
+			m[sanitizeAuthor(strings.Trim(a, " "))] = []string{strings.Trim(sp[0]+"-"+sp[1]+"-"+sp[2], " ")}
 		}
 		//artist - title-title-title
 		//artist-artist - title-title
