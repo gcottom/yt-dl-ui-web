@@ -76,6 +76,9 @@ func generateToken() (string, error) {
 	return tokenString, nil
 }
 func sanitizeUrl(id string) (string, error) {
+	if strings.Contains(id, "playlist") {
+		return "", errors.New("playlist is not currently supported")
+	}
 	san := strings.Replace(id, "https://", "", 1)
 	san = strings.Replace(san, "www.", "", 1)
 	san = strings.Replace(san, "music.youtube.com/", "", 1)
