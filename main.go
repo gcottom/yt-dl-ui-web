@@ -31,7 +31,6 @@ var (
 	viewContent          *fyne.Container
 	lastSearch           time.Time
 	searchWaitingChannel chan bool
-	download             func(s string)
 )
 
 const (
@@ -269,8 +268,34 @@ func init() {
 	trackSavedNotif = func() {
 		dialog.ShowInformation("Complete", "Track Downloaded and MetaData Saved Successfully!", w)
 	}
-	download = func(s string) {
-		if strings.TrimSpace(s) != "" {
+
+}
+func main() {
+
+	appIcon, err := fyne.LoadResourceFromPath("appIcon.png")
+	if err != nil {
+		fmt.Print(err)
+	}
+	a = app.NewWithID("yt-dl-ui-web")
+	a.SetIcon(appIcon)
+	w = a.NewWindow("yt-dl-ui - Youtube Downloader")
+	w.SetIcon(appIcon)
+	w.Resize(fyne.NewSize(600, 600))
+	w.SetFixedSize(true)
+	showMainScreen()
+	w.ShowAndRun()
+
+}
+
+func showMainScreen() {
+	tsb = widget.NewEntry()
+	msb = widget.NewEntry()
+	msb.OnChanged = searchMetaWithArtist
+	tsb.OnChanged = searchMetaWithArtist
+	titleLabel := widget.NewLabel("Youtube URL:")
+	urlBox := widget.NewEntry()
+	downloadButton := widget.NewButton("DOWNLOAD", func() {
+		if strings.TrimSpace(urlBox.Text) != "" {
 			pb := widget.NewProgressBarInfinite()
 			tbSpacer := layout.NewSpacer()
 			tbSpacer.Resize(fyne.NewSize(0, 200))
@@ -278,7 +303,7 @@ func init() {
 			var err error
 			var tempFile string
 			var author string
-			tempFile, title, author, err = getTrack(s)
+			tempFile, title, author, err = getTrack(urlBox.Text)
 			if err != nil {
 				fmt.Print("Download Error")
 				handleError(err)
@@ -331,51 +356,6 @@ func init() {
 			}
 
 		}
-	}
-
-}
-func main() {
-
-	appIcon, err := fyne.LoadResourceFromPath("appIcon.png")
-	if err != nil {
-		fmt.Print(err)
-	}
-	a = app.NewWithID("yt-dl-ui-web")
-	a.SetIcon(appIcon)
-	w = a.NewWindow("yt-dl-ui - Youtube Downloader")
-	w.SetIcon(appIcon)
-	w.Resize(fyne.NewSize(600, 600))
-	w.SetFixedSize(true)
-	showMainScreen()
-	w.ShowAndRun()
-
-}
-
-type customWidget struct {
-	widget.Entry
-}
-
-func newCustomWidget() *customWidget {
-	wid := &customWidget{}
-	wid.ExtendBaseWidget(wid)
-	return wid
-}
-func (w *customWidget) Tapped(ev *fyne.PointEvent) {
-	w.FocusGained()
-	showKeyboard()
-}
-
-func showMainScreen() {
-	tsb = widget.NewEntry()
-	msb = widget.NewEntry()
-	msb.OnChanged = searchMetaWithArtist
-	tsb.OnChanged = searchMetaWithArtist
-	titleLabel := widget.NewLabel("Youtube URL:")
-	urlBox := newCustomWidget()
-	urlBox.OnSubmitted = download
-
-	downloadButton := widget.NewButton("DOWNLOAD", func() {
-		download(urlBox.Text)
 	})
 	topbox := container.New(layout.NewHBoxLayout(), widget.NewLabel("Download A Track"), layout.NewSpacer())
 	hContent := container.New(layout.NewVBoxLayout(), container.New(layout.NewFormLayout(), titleLabel, urlBox), downloadButton)
