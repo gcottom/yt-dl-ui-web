@@ -17,7 +17,7 @@ func pSanitize(s string) (sanitizedTrack, coverArtist string) {
 	inpar := inparReg.FindAllStringSubmatch(s, -1)
 	san := inparReg.ReplaceAllString(s, "")
 	for _, match := range inpar {
-		if strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "albumversion") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "officialmusicvideo") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "liveversion") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "officialvideo") {
+		if strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "albumversion") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "officialmusicvideo") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "liveversion") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "officialvideo") || strings.Contains(strings.ToLower(strings.ReplaceAll(match[0], " ", "")), "officiallyricvideo") {
 			continue
 		}
 		if strings.Contains(strings.ToLower(match[0]), "cover by") || strings.Contains(strings.ToLower(match[0]), "by ") {
@@ -50,22 +50,32 @@ func artistTitleSplit(s, c, a string) map[string][]string {
 		//cover artist overrides original artist
 		if c != "" && len(sp) == 2 {
 			m[strings.Trim(sanitizeAuthor(c), " ")] = []string{strings.Trim(sp[0], " "), strings.Trim(sp[1], " ")}
+			return m
 		}
 		//artist - title case
 		if c == "" && len(sp) == 2 {
-			m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1], " ")}
+			if strings.EqualFold(sanitizeAuthor(strings.Trim(a, " ")), strings.Trim(sp[0], " ")) {
+				m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1], " "), strings.Trim(sp[0]+"-"+sp[1], " ")}
+			} else {
+				m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1], " ")}
+				m[sanitizeAuthor(strings.Trim(a, " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
+			}
 			m[sanitizeAuthor(strings.Trim(sp[1], " "))] = []string{strings.Trim(sp[0], " ")}
-			m[sanitizeAuthor(strings.Trim(a, " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
 			return m
 		}
 		//artist - title-title case or
 		//artist-artist - title case
 		if c == "" && len(sp) == 3 {
-			m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1]+"-"+sp[2], " ")}
+			if strings.EqualFold(sanitizeAuthor(strings.Trim(a, " ")), strings.Trim(sp[0], " ")) {
+				m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1]+"-"+sp[2], " "), strings.Trim(sp[0]+"-"+sp[1]+"-"+sp[2], " ")}
+			} else {
+				m[sanitizeAuthor(strings.Trim(sp[0], " "))] = []string{strings.Trim(sp[1]+"-"+sp[2], " ")}
+				m[sanitizeAuthor(strings.Trim(a, " "))] = []string{strings.Trim(sp[0]+"-"+sp[1]+"-"+sp[2], " ")}
+			}
 			m[sanitizeAuthor(strings.Trim(sp[0]+"-"+sp[1], " "))] = []string{strings.Trim(sp[2], " ")}
 			m[sanitizeAuthor(strings.Trim(sp[1]+"-"+sp[2], " "))] = []string{strings.Trim(sp[0], " ")}
 			m[sanitizeAuthor(strings.Trim(sp[2], " "))] = []string{strings.Trim(sp[0]+"-"+sp[1], " ")}
-			m[sanitizeAuthor(strings.Trim(a, " "))] = []string{strings.Trim(sp[0]+"-"+sp[1]+"-"+sp[2], " ")}
+			return m
 		}
 		//artist - title-title-title
 		//artist-artist - title-title

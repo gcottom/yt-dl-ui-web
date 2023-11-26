@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/data/binding"
 
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -25,6 +26,7 @@ var (
 	searchMetaWithArtist func(s string)
 	searchMeta           func()
 	trackSavedNotif      func()
+	downloadTrack        func(d string)
 	title                string
 	OutFile              string
 	DLDir                string
@@ -268,50 +270,27 @@ func init() {
 	trackSavedNotif = func() {
 		dialog.ShowInformation("Complete", "Track Downloaded and MetaData Saved Successfully!", w)
 	}
-
-}
-func main() {
-
-	appIcon, err := fyne.LoadResourceFromPath("appIcon.png")
-	if err != nil {
-		fmt.Print(err)
-	}
-	a = app.NewWithID("yt-dl-ui-web")
-	a.SetIcon(appIcon)
-	w = a.NewWindow("yt-dl-ui - Youtube Downloader")
-	w.SetIcon(appIcon)
-	w.Resize(fyne.NewSize(600, 600))
-	w.SetFixedSize(true)
-	showMainScreen()
-	w.ShowAndRun()
-
-}
-
-func showMainScreen() {
-	tsb = widget.NewEntry()
-	msb = widget.NewEntry()
-	msb.OnChanged = searchMetaWithArtist
-	tsb.OnChanged = searchMetaWithArtist
-	titleLabel := widget.NewLabel("Youtube URL:")
-	urlBox := widget.NewEntry()
-	downloadButton := widget.NewButton("DOWNLOAD", func() {
-		if strings.TrimSpace(urlBox.Text) != "" {
-			pb := widget.NewProgressBarInfinite()
-			tbSpacer := layout.NewSpacer()
-			tbSpacer.Resize(fyne.NewSize(0, 200))
-			w.SetContent(container.NewCenter(pb))
-			var err error
-			var tempFile string
-			var author string
-			tempFile, title, author, err = getTrack(urlBox.Text)
+	downloadTrack = func(d string) {
+		if strings.TrimSpace(d) != "" {
+			showLabeledLoadingScreen("Fetching Track")
+			tempFile, title, author, err := getTrack(d)
 			if err != nil {
 				fmt.Print("Download Error")
 				handleError(err)
 				showMainScreen()
 				return
 			}
+			showLabeledLoadingScreen("Converting Track")
+			err = getConverted(tempFile)
+			if err != nil {
+				fmt.Print("Download Error")
+				handleError(err)
+				showMainScreen()
+				return
+			}
+			showLabeledLoadingScreen("Fetching Metadata")
 			m := getArtistTitleCombos(title, author)
-			results, err := getMetaInit(m)
+			results, err := getMeta(m)
 			if err != nil {
 				fmt.Print("Metadata Search Error")
 				handleError(err)
@@ -339,10 +318,7 @@ func showMainScreen() {
 				}
 			}
 			if absolute_match_found {
-				pb := widget.NewProgressBarInfinite()
-				tbSpacer := layout.NewSpacer()
-				tbSpacer.Resize(fyne.NewSize(0, 200))
-				w.SetContent(container.NewCenter(pb))
+				showLabeledLoadingScreen("Processing Metadata")
 				tdata, fname, err := saveMeta(Meta{song: absolute_match.song, albumImage: absolute_match.albumImage, album: absolute_match.album, artist: absolute_match.artist}, tempFile)
 				if err != nil {
 					handleError(err)
@@ -356,12 +332,55 @@ func showMainScreen() {
 			}
 
 		}
+	}
+
+}
+func main() {
+
+	appIcon, err := fyne.LoadResourceFromPath("appIcon.png")
+	if err != nil {
+		fmt.Print(err)
+	}
+	a = app.NewWithID("yt-dl-ui-web")
+	a.SetIcon(appIcon)
+	w = a.NewWindow("yt-dl-ui - Youtube Downloader")
+	w.SetIcon(appIcon)
+	w.Resize(fyne.NewSize(600, 600))
+	w.SetFixedSize(true)
+	showMainScreen()
+	w.ShowAndRun()
+
+}
+
+func showMainScreen() {
+	tsb = widget.NewEntry()
+	msb = widget.NewEntry()
+	msb.OnChanged = searchMetaWithArtist
+	tsb.OnChanged = searchMetaWithArtist
+	titleLabel := widget.NewLabel("Youtube URL:")
+	ytId := binding.NewString()
+	urlBox := widget.NewEntryWithData(ytId)
+	urlBox.OnSubmitted = downloadTrack
+	downloadButton := widget.NewButton("DOWNLOAD", func() {
+		id, err := ytId.Get()
+		if err != nil {
+			handleError(err)
+			showMainScreen()
+		}
+		downloadTrack(id)
 	})
 	topbox := container.New(layout.NewHBoxLayout(), widget.NewLabel("Download A Track"), layout.NewSpacer())
 	hContent := container.New(layout.NewVBoxLayout(), container.New(layout.NewFormLayout(), titleLabel, urlBox), downloadButton)
 	vBox := container.New(layout.NewVBoxLayout(), topbox, hContent)
 	viewContent = vBox
 	w.SetContent(container.NewVScroll(viewContent))
+}
+func showLabeledLoadingScreen(s string) {
+	pb := widget.NewProgressBarInfinite()
+	tbSpacer := layout.NewSpacer()
+	tbSpacer.Resize(fyne.NewSize(0, 200))
+	vb := container.NewVBox(tbSpacer, pb, widget.NewLabel(s))
+	w.SetContent(container.NewCenter(vb))
 }
 
 func handleError(err error) {

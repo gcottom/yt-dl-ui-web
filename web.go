@@ -75,14 +75,32 @@ func generateToken() (string, error) {
 	oldToken = tokenString
 	return tokenString, nil
 }
-
+func sanitizeUrl(id string) (string, error) {
+	san := strings.Replace(id, "https://", "", 1)
+	san = strings.Replace(san, "www.", "", 1)
+	san = strings.Replace(san, "music.youtube.com/", "", 1)
+	san = strings.Replace(san, "youtube.com/", "", 1)
+	san = strings.Replace(san, "youtu.be/", "", 1)
+	san = strings.Replace(san, "watch?v=", "", 1)
+	san = strings.Replace(san, "&feature=share", "", 1)
+	if strings.Contains(san, "&") || strings.Contains(san, "?") {
+		sp := strings.Split(san, "&")
+		if len(sp) != 2 {
+			sp = strings.Split(san, "?")
+		}
+		san = sp[0]
+	}
+	if len(san) != 11 {
+		return "", errors.New("invalid video id")
+	}
+	return san, nil
+}
 func getTrack(id string) (string, string, string, error) {
-	id = strings.Replace(id, "&feature=share", "", 1)
-	id = strings.Replace(id, "https://music.youtube.com/watch?v=", "", 1)
-	id = strings.Replace(id, "https://www.music.youtube.com/watch?v=", "", 1)
-	id = strings.Replace(id, "https://www.youtube.com/watch?v", "", 1)
-	id = strings.Replace(id, "https://youtube.com/watch?v", "", 1)
-	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/tracks/"+id, nil)
+	san, err := sanitizeUrl(id)
+	if err != nil {
+		return "", "", "", err
+	}
+	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/tracks/"+san, nil)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -108,40 +126,43 @@ func getTrack(id string) (string, string, string, error) {
 	if gtr.Error != "" {
 		return "", "", "", errors.New(gtr.Error)
 	}
-	s3id := strings.ReplaceAll(gtr.TrackUrl, "https://yt-dl-ui-downloads.s3.us-east-2.amazonaws.com/", "")
+	return gtr.TrackUrl, gtr.Title, gtr.Author, nil
+}
+func getConverted(trackUrl string) error {
+	client := &http.Client{}
+	s3id := strings.ReplaceAll(trackUrl, "https://yt-dl-ui-downloads.s3.us-east-2.amazonaws.com/", "")
 	start := time.Now()
 	for {
 		if time.Now().After(start.Add(2 * time.Minute)) {
-			return "", "", "", errors.New("conversion timed out")
+			return errors.New("conversion timed out")
 		}
-		req, err = http.NewRequest(http.MethodGet, "https://api.gagecottom.com/converted/"+s3id, nil)
+		req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/converted/"+s3id, nil)
 		if err != nil {
-			return "", "", "", err
+			return err
 		}
 		token, err := generateToken()
 		if err != nil {
-			return "", "", "", err
+			return err
 		}
 		req.Header.Add("Authorization", "Bearer "+token)
 		res, err := client.Do(req)
 		if err != nil {
-			return "", "", "", err
+			return err
 		}
 		rbody, err := io.ReadAll(res.Body)
 		if err != nil {
-			return "", "", "", err
+			return err
 		}
 		var tres trackConvertedResponse
 		if err = json.Unmarshal(rbody, &tres); err != nil {
-			return "", "", "", err
+			return err
 		}
 		if tres.TrackConverted {
 			break
 		}
 		time.Sleep(5 * time.Second)
-
 	}
-	return gtr.TrackUrl, gtr.Title, gtr.Author, nil
+	return nil
 }
 
 func saveMeta(m Meta, url string) ([]byte, string, error) {
@@ -188,7 +209,7 @@ func saveMeta(m Meta, url string) ([]byte, string, error) {
 	return data, stmr.FileName, nil
 }
 
-func getMetaInit(m map[string][]string) ([]metaResult, error) {
+func getMeta(m map[string][]string) ([]metaResult, error) {
 	outResult := []metaResult{}
 	for key, value := range m {
 		for _, v1 := range value {
