@@ -272,7 +272,7 @@ func init() {
 	}
 	downloadTrack = func(d string) {
 		if strings.TrimSpace(d) != "" {
-			showLabeledLoadingScreen("Fetching Track")
+			showLabeledLoadingScreen("Fetching Track...")
 			tempFile, title, author, err := getTrack(d)
 			if err != nil {
 				fmt.Print("Download Error")
@@ -280,7 +280,7 @@ func init() {
 				showMainScreen()
 				return
 			}
-			showLabeledLoadingScreen("Converting Track")
+			showLabeledLoadingScreen("Converting Track...")
 			err = getConverted(tempFile)
 			if err != nil {
 				fmt.Print("Download Error")
@@ -288,7 +288,7 @@ func init() {
 				showMainScreen()
 				return
 			}
-			showLabeledLoadingScreen("Fetching Metadata")
+			showLabeledLoadingScreen("Fetching Metadata...")
 			m := getArtistTitleCombos(title, author)
 			results, err := getMeta(m)
 			if err != nil {
@@ -318,7 +318,7 @@ func init() {
 				}
 			}
 			if absolute_match_found {
-				showLabeledLoadingScreen("Processing Metadata")
+				showLabeledLoadingScreen("Processing Metadata...")
 				tdata, fname, err := saveMeta(Meta{song: absolute_match.song, albumImage: absolute_match.albumImage, album: absolute_match.album, artist: absolute_match.artist}, tempFile)
 				if err != nil {
 					handleError(err)
