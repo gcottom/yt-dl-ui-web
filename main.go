@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/data/binding"
 
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -352,21 +351,31 @@ func main() {
 
 }
 
+type customWidget struct {
+	widget.Entry
+}
+
+func newCustomWidget() *customWidget {
+	wid := &customWidget{}
+	wid.ExtendBaseWidget(wid)
+	return wid
+}
+func (cw *customWidget) Tapped(ev *fyne.PointEvent) {
+	w.Canvas().Focus(cw)
+	showKeyboard()
+}
+
 func showMainScreen() {
 	tsb = widget.NewEntry()
 	msb = widget.NewEntry()
 	msb.OnChanged = searchMetaWithArtist
 	tsb.OnChanged = searchMetaWithArtist
 	titleLabel := widget.NewLabel("YT/YT Music URL:")
-	ytId := binding.NewString()
-	urlBox := widget.NewEntryWithData(ytId)
+	//ytId := binding.NewString()
+	urlBox := newCustomWidget()
 	urlBox.OnSubmitted = downloadTrack
 	downloadButton := widget.NewButton("DOWNLOAD", func() {
-		id, err := ytId.Get()
-		if err != nil {
-			handleError(err)
-			showMainScreen()
-		}
+		id := urlBox.Text
 		downloadTrack(id)
 	})
 	topbox := container.New(layout.NewHBoxLayout(), widget.NewLabel("Download A Track"), layout.NewSpacer())
