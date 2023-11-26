@@ -357,7 +357,7 @@ func showMainScreen() {
 	msb = widget.NewEntry()
 	msb.OnChanged = searchMetaWithArtist
 	tsb.OnChanged = searchMetaWithArtist
-	titleLabel := widget.NewLabel("Youtube URL:")
+	titleLabel := widget.NewLabel("YT/YT Music URL:")
 	ytId := binding.NewString()
 	urlBox := widget.NewEntryWithData(ytId)
 	urlBox.OnSubmitted = downloadTrack
