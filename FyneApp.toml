@@ -5,4 +5,4 @@ Website = "https://yt-dl.gagecottom.com"
   Name = "yt-dl-ui-web"
   ID = "com.gagecottom.yt-dl-ui-web"
   Version = "0.2.5"
-  Build = 64
+  Build = 65

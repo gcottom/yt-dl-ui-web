@@ -306,7 +306,22 @@ func init() {
 				}
 				jsDownload(tdata, fname)
 			} else {
-				tsb.Text = title
+				sp := strings.Split(title, "-")
+				for i, s := range sp {
+					sp[i] = strings.Trim(s, " ")
+				}
+				if len(sp) > 1 {
+					msb.Text = sp[0]
+					for i, s := range sp[1:] {
+						tsb.Text = tsb.Text + s
+						if i+1 < len(sp[1:]) {
+							tsb.Text = tsb.Text + " "
+						}
+					}
+				} else {
+					tsb.Text = title
+				}
+
 				OutFile = tempFile
 				searchMeta()
 			}
