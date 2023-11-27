@@ -4,5 +4,5 @@ Website = "https://yt-dl.gagecottom.com"
   Icon = "appIcon.png"
   Name = "yt-dl-ui-web"
   ID = "com.gagecottom.yt-dl-ui-web"
-  Version = "0.2.5"
-  Build = 65
+  Version = "0.2.6"
+  Build = 68
