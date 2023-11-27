@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -37,8 +36,10 @@ type trackConvertedResponse struct {
 	Error          string `json:"error,omitempty"`
 }
 type getMetaResponse struct {
-	Results []metaResult `json:"results,omitempty"`
-	Error   string       `json:"error,omitempty"`
+	AbsoluteMatchFound bool         `json:"absoluteMatchFound"`
+	AbsoluteMatchMeta  metaResult   `json:"absoluteMatchMeta"`
+	Results            []metaResult `json:"results,omitempty"`
+	Error              string       `json:"error,omitempty"`
 }
 type metaResult struct {
 	Title    string `json:"title,omitempty"`
@@ -212,40 +213,80 @@ func saveMeta(m Meta, url string) ([]byte, string, error) {
 	return data, stmr.FileName, nil
 }
 
-func getMeta(m map[string][]string) ([]metaResult, error) {
-	outResult := []metaResult{}
-	for key, value := range m {
-		for _, v1 := range value {
-
-			req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/meta/"+url.PathEscape(key)+"/"+url.PathEscape(v1), nil)
-			if err != nil {
-				return nil, err
-			}
-			token, err := generateToken()
-			if err != nil {
-				return nil, err
-			}
-			client := &http.Client{}
-			req.Header.Add("Authorization", "Bearer "+token)
-			res, err := client.Do(req)
-			if err != nil {
-				return nil, err
-			}
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
-			if err != nil {
-				return nil, err
-			}
-			var gmr getMetaResponse
-			if err = json.Unmarshal(resBody, &gmr); err != nil {
-				return nil, err
-			}
-			if gmr.Error != "" {
-				return nil, err
-			}
-			outResult = append(outResult, gmr.Results...)
-		}
+func getMetaAMS(tracktitle, author string) (bool, Meta, error) {
+	outResult := Meta{}
+	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/meta", nil)
+	if err != nil {
+		return false, outResult, err
 	}
+	q := req.URL.Query()
+	q.Add("ams", "true")
+	q.Add("title", tracktitle)
+	q.Add("author", author)
+	req.URL.RawQuery = q.Encode()
+	token, err := generateToken()
+	if err != nil {
+		return false, outResult, err
+	}
+	client := &http.Client{}
+	req.Header.Add("Authorization", "Bearer "+token)
+	res, err := client.Do(req)
+	if err != nil {
+		return false, outResult, err
+	}
+	defer res.Body.Close()
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return false, outResult, err
+	}
+	var gmr getMetaResponse
+	if err = json.Unmarshal(resBody, &gmr); err != nil {
+		return false, outResult, err
+	}
+	if gmr.Error != "" {
+		return false, outResult, err
+	}
+	outResult.artist = gmr.AbsoluteMatchMeta.Artist
+	outResult.album = gmr.AbsoluteMatchMeta.Album
+	outResult.albumImage = gmr.AbsoluteMatchMeta.AlbumArt
+	outResult.song = gmr.AbsoluteMatchMeta.Title
+	return gmr.AbsoluteMatchFound, outResult, nil
+
+}
+func getMeta(tracktitle, artist string) ([]metaResult, error) {
+	outResult := []metaResult{}
+	req, err := http.NewRequest(http.MethodGet, "https://api.gagecottom.com/meta", nil)
+	if err != nil {
+		return nil, err
+	}
+	q := req.URL.Query()
+	q.Add("ams", "false")
+	q.Add("title", tracktitle)
+	q.Add("artist", artist)
+	req.URL.RawQuery = q.Encode()
+	token, err := generateToken()
+	if err != nil {
+		return nil, err
+	}
+	client := &http.Client{}
+	req.Header.Add("Authorization", "Bearer "+token)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	var gmr getMetaResponse
+	if err = json.Unmarshal(resBody, &gmr); err != nil {
+		return nil, err
+	}
+	if gmr.Error != "" {
+		return nil, err
+	}
+	outResult = append(outResult, gmr.Results...)
 	return outResult, nil
 
 }

@@ -288,33 +288,14 @@ func init() {
 				return
 			}
 			showLabeledLoadingScreen("Fetching Metadata...")
-			m := getArtistTitleCombos(title, author)
-			results, err := getMeta(m)
+			absolute_match := Meta{}
+			absolute_match_found := false
+			absolute_match_found, absolute_match, err = getMetaAMS(title, author)
 			if err != nil {
 				fmt.Print("Metadata Search Error")
 				handleError(err)
 				showMainScreen()
 				return
-			}
-			absolute_match := Meta{}
-			absolute_match_found := false
-		r_loop:
-			for _, r := range results {
-				for k, v := range m {
-					if strings.EqualFold(k, r.Artist) {
-						for _, v1 := range v {
-							if strings.EqualFold(v1, r.Title) {
-								absolute_match_found = true
-								absolute_match.artist = r.Artist
-								absolute_match.album = r.Album
-								absolute_match.albumImage = r.AlbumArt
-								absolute_match.song = r.Title
-								fmt.Println("Absolute Match Found")
-								break r_loop
-							}
-						}
-					}
-				}
 			}
 			if absolute_match_found {
 				showLabeledLoadingScreen("Processing Metadata...")
