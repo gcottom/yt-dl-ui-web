@@ -279,14 +279,6 @@ func init() {
 				showMainScreen()
 				return
 			}
-			showLabeledLoadingScreen("...Converting  Track...")
-			err = getConverted(tempFile)
-			if err != nil {
-				fmt.Print("Download Error")
-				handleError(err)
-				showMainScreen()
-				return
-			}
 			showLabeledLoadingScreen("...Fetching Metadata...")
 			absolute_match := Meta{}
 			absolute_match_found := false
@@ -298,6 +290,14 @@ func init() {
 				return
 			}
 			if absolute_match_found {
+				showLabeledLoadingScreen("...Converting  Track...")
+				err = getConverted(tempFile)
+				if err != nil {
+					fmt.Print("Download Error")
+					handleError(err)
+					showMainScreen()
+					return
+				}
 				showLabeledLoadingScreen("..Processing Metadata..")
 				tdata, fname, err := saveMeta(Meta{song: absolute_match.song, albumImage: absolute_match.albumImage, album: absolute_match.album, artist: absolute_match.artist}, tempFile)
 				if err != nil {
