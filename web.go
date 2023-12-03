@@ -81,7 +81,7 @@ func sanitizeUrl(id string) (string, error) {
 	if strings.Contains(id, "playlist") {
 		return "", errors.New("playlist is not currently supported")
 	}
-	san := regexp.MustCompile(`https://|www.|music.youtube.com/|youtube.com/|youtu.be/|watch?v=|&feature=share`).ReplaceAllString(id, "")
+	san := regexp.MustCompile(`https://|www.|music.youtube.com/|youtube.com/|youtu.be/|watch\?v=|&feature=share`).ReplaceAllString(id, "")
 	if strings.Contains(san, "&") || strings.Contains(san, "?") {
 		sp := strings.Split(san, "&")
 		if len(sp) != 2 {
