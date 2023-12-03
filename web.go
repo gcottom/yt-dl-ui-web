@@ -136,7 +136,7 @@ func getConverted(trackUrl string) error {
 	client := &http.Client{}
 	s3id := strings.ReplaceAll(trackUrl, "https://yt-dl-ui-downloads.s3.us-east-2.amazonaws.com/", "")
 	start := time.Now()
-	time.Sleep(5000 * time.Millisecond)
+	time.Sleep(7500 * time.Millisecond)
 	for {
 		if time.Now().After(start.Add(2 * time.Minute)) {
 			return errors.New("conversion timed out")
