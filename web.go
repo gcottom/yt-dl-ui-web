@@ -57,7 +57,7 @@ func generateToken() (string, error) {
 	now := time.Now()
 	claims["exp"] = jwt.NewNumericDate(now.Add(300 * time.Second))
 	claims["iat"] = jwt.NewNumericDate(now)
-	claims["nbf"] = jwt.NewNumericDate(now)
+	claims["nbf"] = jwt.NewNumericDate(now.Add(-60 * time.Second))
 	claims["authorized"] = true
 	claims["user"] = "yt-dl-ui"
 	nonce, err := uuid.NewRandom()
