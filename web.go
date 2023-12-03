@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -80,13 +81,7 @@ func sanitizeUrl(id string) (string, error) {
 	if strings.Contains(id, "playlist") {
 		return "", errors.New("playlist is not currently supported")
 	}
-	san := strings.Replace(id, "https://", "", 1)
-	san = strings.Replace(san, "www.", "", 1)
-	san = strings.Replace(san, "music.youtube.com/", "", 1)
-	san = strings.Replace(san, "youtube.com/", "", 1)
-	san = strings.Replace(san, "youtu.be/", "", 1)
-	san = strings.Replace(san, "watch?v=", "", 1)
-	san = strings.Replace(san, "&feature=share", "", 1)
+	san := regexp.MustCompile(`https://|www.|music.youtube.com/|youtube.com/|youtu.be/|watch?v=|&feature=share`).ReplaceAllString(id, "")
 	if strings.Contains(san, "&") || strings.Contains(san, "?") {
 		sp := strings.Split(san, "&")
 		if len(sp) != 2 {
